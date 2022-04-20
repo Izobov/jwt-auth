@@ -14,12 +14,12 @@ class UserService {
     }
     const hashPassword = await bcrypt.hash(password, 3);
     const activationLink = uuid.v4();
+    await mailService.sendActivationMail(email, `${process.env.API_URL}/api/activate/${activationLink}`);
     const user = await UserModel.create({
       email,
       password: hashPassword,
       activationLink,
     });
-    await mailService.sendActivationMail(email, `${process.env.API_URL}/api/activate/${activationLink}`);
 
     const userDto = new UserDto(user);
     const tokens = tokenService.generateTokens({ ...userDto });
@@ -49,7 +49,7 @@ class UserService {
     if (!isCorrectPassword) {
       throw ApiError.BadRequest("Incorrect email or password");
     }
-    const userDto = UserDto(user);
+    const userDto = new UserDto(user);
     const tokens = tokenService.generateTokens({...userDto});
     await tokenService.saveToken(userDto.id, tokens.refreshToken);
     return {
@@ -74,7 +74,7 @@ class UserService {
       throw ApiError.UnautharizedError();
     }
     const user = await UserModel.findById(userData.id);
-    const userDto = UserDto(user);
+    const userDto = new UserDto(user);
     const tokens = tokenService.generateTokens({...userDto});
     await tokenService.saveToken(userDto.id, tokens.refreshToken);
     return {
